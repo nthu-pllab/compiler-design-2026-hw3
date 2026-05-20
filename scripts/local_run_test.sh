@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────
-# run_test.sh  —  CS340400 HW2 local test runner
+# run_test.sh  —  CS340400 HW3 local test runner
 # Usage:
 #   run_test                              → runs all testcases
 #   run_test array_decl_wo_init           → runs testcases/array_decl_wo_init only
@@ -27,7 +27,7 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║   CS340400 HW2 — Local Test Runner       ║${NC}"
+echo -e "${BOLD}║   CS340400 HW3 — Local Test Runner       ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -78,8 +78,8 @@ else
     echo -e "${GREEN}  ✓ Compiled cleanly (no warnings)${NC}"
 fi
 
-if [ ! -f "$BUILD_DIR/parser" ]; then
-    echo -e "${RED}  ✗ 'parser' binary not found after make.${NC}"
+if [ ! -f "$BUILD_DIR/codegen" ]; then
+    echo -e "${RED}  ✗ 'codegen' binary not found after make.${NC}"
     exit 1
 fi
 
@@ -99,7 +99,7 @@ if [ "${1:-}" = "debug" ]; then
     echo -e "${CYAN}[3/4] Debug: $TESTCASE${NC}"
     echo ""
     echo -e "${YELLOW}--- Your output ---${NC}"
-    "$BUILD_DIR/parser" < "$input_file" 2>&1
+    "$BUILD_DIR/codegen" < "$input_file" 2>&1
     echo ""
     echo -e "${YELLOW}--- Golden output ---${NC}"
     cat "$TESTCASE_DIR/answers/${TESTCASE}_answer.txt"
@@ -120,8 +120,8 @@ for input_file in "$TESTCASE_DIR"/*.txt; do
         continue
     fi
 
-    student_out=$("$BUILD_DIR/parser" < "$input_file" 2>/dev/null) || {
-        echo -e "${RED}  CRASH ${testname} — parser exited with error${NC}"
+    student_out=$("$BUILD_DIR/codegen" < "$input_file" 2>/dev/null) || {
+        echo -e "${RED}  CRASH ${testname} — codegen exited with error${NC}"
         ERRORS=$((ERRORS + 1))
         continue
     }

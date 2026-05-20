@@ -1,6 +1,6 @@
-all: parser
+all: codegen
 
-parser: lex.yy.c y.tab.c
+codegen: lex.yy.c y.tab.c
 	gcc -o $@ $^ -lfl
 
 y.tab.c y.tab.h y.output &: parser.y
@@ -11,6 +11,6 @@ lex.yy.c: scanner.l y.tab.h
 
 .PHONY: clean
 clean: 
-	rm -rf lex.yy.c y.tab.c y.tab.h y.output
+	rm -rf lex.yy.c y.tab.c y.tab.h y.output codegen.S
 
 

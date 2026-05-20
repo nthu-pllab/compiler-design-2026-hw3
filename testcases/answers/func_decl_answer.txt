@@ -1,1 +1,0 @@
-<func_decl>voida();</func_decl><func_decl>constsignedlonglongb(floatc);</func_decl><func_decl>unsigned*d(double*e,signedcharf);</func_decl><func_decl>signedshort*g();</func_decl><func_decl>void*h(constint*i,constj);</func_decl>

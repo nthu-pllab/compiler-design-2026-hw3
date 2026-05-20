@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-docker compose run --rm hw2 run_test "$@"
+docker compose run --rm hw3 run_test "$@"

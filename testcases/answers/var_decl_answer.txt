@@ -1,1 +1,0 @@
-<scalar_decl>inta=<expr>0</expr>,b;</scalar_decl><array_decl>unsignedcharc[<expr>1</expr>][<expr>2</expr>]={{<expr>'d'</expr>}};</array_decl><array_decl>constfloate[<expr>3</expr>][<expr>4</expr>][<expr>5</expr>]={<expr>0.000000</expr>};</array_decl><scalar_decl>doublef=<expr>6.700000</expr>,g,h,i=<expr>-<expr>8</expr></expr>;</scalar_decl>

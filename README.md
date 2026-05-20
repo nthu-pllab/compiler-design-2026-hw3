@@ -1,9 +1,9 @@
-# CS340400 HW2 — Parser
+# CS340400 HW3 — Codegen
 
 ## Repository Structure
 
 ```
-compiler-design-2026-hw2/
+compiler-design-2026-hw3/
 ├── docker-compose.yml
 ├── src/
 │   ├── scanner.l       ← YOUR WORK GOES HERE
@@ -16,8 +16,8 @@ compiler-design-2026-hw2/
 │   └── ...
 └── scripts/
     ├── run_test.sh         ← run all testcases (docker)
-    ├── run_parser.sh       ← run your parser (docker)
-    ├── run_golden.sh       ← run golden parser (docker)
+    ├── run_codegen.sh       ← run your codegen (docker)
+    ├── run_golden.sh       ← run golden codegen (docker)
     └── local_run_test.sh   ← run all testcases (local, no docker)
 ```
 
@@ -25,7 +25,7 @@ compiler-design-2026-hw2/
 
 ## Path A — Develop with Docker (Recommended)
 
-Docker gives you access to `golden_parser`, the reference binary, so you can compare your output directly.
+Docker gives you access to `golden_codegen`, the reference binary, so you can compare your output directly.
 
 ### Prerequisites
 
@@ -34,7 +34,7 @@ Docker gives you access to `golden_parser`, the reference binary, so you can com
 ### Setup
 
 ```bash
-docker pull compilerdesign/compiler-design-2026-hw2
+docker pull compilerdesign/compiler-design-2026-hw3
 ```
 
 ### Workflow
@@ -56,43 +56,43 @@ Edit `src/scanner.l` and `src/parser.y`, then:
 ./scripts/run_test.sh debug array_decl_wo_init
 ```
 
-**Run your parser interactively:**
+**Run your codegen interactively:**
 ```bash
-./scripts/run_parser.sh < testcases/array_decl_wo_init.txt
+./scripts/run_codegen.sh < testcases/array_decl_wo_init.txt
 ```
 
-**Run the golden parser interactively:**
+**Run the golden codegen interactively:**
 ```bash
 ./scripts/run_golden.sh < testcases/array_decl_wo_init.txt
 ```
 
 **Diff your output against golden:**
 ```bash
-diff <(./scripts/run_parser.sh < testcases/array_decl_wo_init.txt) <(./scripts/run_golden.sh < testcases/array_decl_wo_init.txt)
+diff <(./scripts/run_codegen.sh < testcases/array_decl_wo_init.txt) <(./scripts/run_golden.sh < testcases/array_decl_wo_init.txt)
 ```
 
 **Drop into a shell inside the container:**
 ```bash
-docker compose run --rm hw2 bash
+docker compose run --rm hw3 bash
 ```
 
 Inside the container you can compile and test manually:
 ```bash
 # compile
-cp /hw2/src/scanner.l /hw2/build/
-cp /hw2/src/parser.y /hw2/build/
-make -C /hw2/build
+cp /hw3/src/scanner.l /hw3/build/
+cp /hw3/src/parser.y /hw3/build/
+make -C /hw3/build
 
-# run your parser
-/hw2/build/parser < /hw2/testcases/array_decl_wo_init.txt
+# run your codegen
+/hw3/build/codegen < /hw3/testcases/array_decl_wo_init.txt
 
 # diff against golden
-diff <(/hw2/build/parser < /hw2/testcases/array_decl_wo_init.txt) <(golden_parser < /hw2/testcases/array_decl_wo_init.txt)
+diff <(/hw3/build/codegen < /hw3/testcases/array_decl_wo_init.txt) <(golden_codegen < /hw3/testcases/array_decl_wo_init.txt)
 ```
 
 **Add your own testcases:**
 
-Place any `.txt` file under `testcases/` and it will be picked up automatically by `run_test.sh` and diffed against `golden_parser`.
+Place any `.txt` file under `testcases/` and it will be picked up automatically by `run_test.sh` and diffed against `golden_codegen`.
 
 ---
 
@@ -129,7 +129,7 @@ Edit `src/scanner.l` and `src/parser.y`, then:
 ./scripts/local_run_test.sh debug array_decl_wo_init
 ```
 
-> **Note:** Local development diffs against pre-generated answer files in `testcases/answers/`. The grading server always uses the live `golden_parser` binary. If you suspect a discrepancy, use Path A to verify.
+> **Note:** Local development diffs against pre-generated answer files in `testcases/answers/`. The grading server always uses the live `golden_codegen` binary. If you suspect a discrepancy, use Path A to verify.
 
 ---
 

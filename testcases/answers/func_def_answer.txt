@@ -1,1 +1,0 @@
-<func_def>voida(){<stmt><expr>1</expr>;</stmt>}</func_def><func_def>constsignedlonglongb(floatc){<stmt>return<expr>2</expr>;</stmt>}</func_def><func_def>unsigned*d(double*e,signedcharf){}</func_def><func_def>signedshort*g(){<stmt>return;</stmt>}</func_def><func_def>void*h(constint*i,constj){<stmt><expr>3</expr>;</stmt>}</func_def>

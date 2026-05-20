@@ -1,11 +1,11 @@
 services:
-  hw2:
-    image: compilerdesign/compiler-design-2026-hw2
+  hw3:
+    image: compilerdesign/compiler-design-2026-hw3
     platform: linux/amd64
     network_mode: none
     volumes:
-      - ./src:/hw2/src
-      - ./testcases:/hw2/testcases
+      - ./src:/hw3/src
+      - ./testcases:/hw3/testcases
     stdin_open: true
     tty: true
     command: run_test

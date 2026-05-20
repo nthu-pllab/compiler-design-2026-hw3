@@ -2,9 +2,10 @@
 # ─────────────────────────────────────────────────────────────
 # run_test.sh  —  CS340400 HW3 local test runner
 # Usage:
-#   run_test                              → runs all testcases
-#   run_test array_decl_wo_init           → runs testcases/array_decl_wo_init only
-#   run_test debug array_decl_wo_init     → compile and print raw output, no diff
+#   run_test                   → runs all testcases
+#   run_test Basic/0           → runs a single testcase
+#   run_test.sh ArithmeticExpression/1  → run a single testcase
+#   run_test debug Basic/0     → debug mode (print assembly + run spike)
 # ─────────────────────────────────────────────────────────────
 
 set -uo pipefail
@@ -25,30 +26,34 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+SPIKE="spike --isa=rv32imafc pk"
+
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}║   CS340400 HW3 — Local Test Runner       ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Step 1: Check scanner.l and parser.y exists ───────────────────────────
+# ── Step 1: Check files ───────────────────────────────────────
 echo -e "${CYAN}[1/4] Checking source files...${NC}"
 
 if [ ! -f "$SRC_DIR/scanner.l" ]; then
-    echo -e "${RED}  ✗ scanner.l not found in ./src/${NC}"
-    echo -e "    Make sure your file is at: ./src/scanner.l"
+    echo -e "${RED}  ✗ scanner.l missing${NC}"
     exit 1
 fi
-
 echo -e "${GREEN}  ✓ scanner.l found${NC}"
 
 if [ ! -f "$SRC_DIR/parser.y" ]; then
-    echo -e "${RED}  ✗ parser.y not found in ./src/${NC}"
-    echo -e "    Make sure your file is at: ./src/parser.y"
+    echo -e "${RED}  ✗ parser.y missing${NC}"
     exit 1
 fi
-
 echo -e "${GREEN}  ✓ parser.y found${NC}"
+
+if [ ! -f "$SRC_DIR/main.c" ]; then
+    echo -e "${RED}  ✗ main.c missing${NC}"
+    exit 1
+fi
+echo -e "${GREEN}  ✓ main.c found${NC}"
 
 # ── Step 2: Compile ───────────────────────────────────────────
 echo ""
@@ -56,9 +61,8 @@ echo -e "${CYAN}[2/4] Compiling...${NC}"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
-cp "$SRC_DIR/scanner.l" "$BUILD_DIR/scanner.l"
-cp "$SRC_DIR/parser.y" "$BUILD_DIR/parser.y"
-cp "$SRC_DIR/Makefile" "$BUILD_DIR/Makefile"
+
+cp "$SRC_DIR/"* "$BUILD_DIR/" 2>/dev/null || true
 cd "$BUILD_DIR"
 
 COMPILE_OUTPUT=$(make 2>&1)
@@ -70,74 +74,85 @@ if [ $COMPILE_EXIT -ne 0 ]; then
     exit 1
 fi
 
-if echo "$COMPILE_OUTPUT" | grep -qi "warning"; then
-    echo -e "${YELLOW}  ⚠ Compilation succeeded but with WARNINGS:${NC}"
-    echo "$COMPILE_OUTPUT" | grep -i "warning"
-    echo -e "${YELLOW}    Warnings carry a -20pt penalty on the server!${NC}"
-else
-    echo -e "${GREEN}  ✓ Compiled cleanly (no warnings)${NC}"
-fi
+echo -e "${GREEN}  ✓ Compiled successfully${NC}"
 
 if [ ! -f "$BUILD_DIR/codegen" ]; then
-    echo -e "${RED}  ✗ 'codegen' binary not found after make.${NC}"
+    echo -e "${RED}  ✗ codegen binary not found${NC}"
     exit 1
 fi
 
-# ── Debug mode: side-by-side your output and golden ──────────
+# ── Debug mode ───────────────────────────────────────────────
 if [ "${1:-}" = "debug" ]; then
     TESTCASE="${2:-}"
-    if [ -z "$TESTCASE" ]; then
-        echo -e "${RED}  Usage: run_test debug <testcase_name>${NC}"
-        exit 1
-    fi
-    input_file="$TESTCASE_DIR/${TESTCASE}.txt"
-    if [ ! -f "$input_file" ]; then
-        echo -e "${RED}  ✗ Testcase not found: $input_file${NC}"
-        exit 1
-    fi
+    input_file="$TESTCASE_DIR/${TESTCASE}.c"
+
     echo ""
-    echo -e "${CYAN}[3/4] Debug: $TESTCASE${NC}"
+    echo -e "${CYAN}[DEBUG] $TESTCASE${NC}"
+
+    rm -f codegen.S a.out golden.S
+
+    "$BUILD_DIR/codegen" < "$input_file" >/dev/null 2>&1
+
     echo ""
-    echo -e "${YELLOW}--- Your output ---${NC}"
-    "$BUILD_DIR/codegen" < "$input_file" 2>&1
+    echo "--- Your assembly ---"
+    cat codegen.S
+
     echo ""
-    echo -e "${YELLOW}--- Golden output ---${NC}"
-    cat "$TESTCASE_DIR/answers/${TESTCASE}_answer.txt"
+    echo "--- Golden assembly ---"
+    riscv32-unknown-elf-gcc -S -c "$input_file" -o golden.S
+    cat golden.S
+
+    echo ""
+    echo "--- Run ---"
+    riscv32-unknown-elf-gcc main.c codegen.S -o a.out
+    $SPIKE a.out
+
     exit 0
 fi
 
-# ── Step 3: Run testcases ─────────────────────────────────────
+# ── Step 3: Run tests ─────────────────────────────────────────
 echo ""
-echo -e "${CYAN}[3/4] Running testcases...${NC}"
+echo -e "${CYAN}[3/4] Running tests...${NC}"
 echo ""
 
 FILTER="${1:-}"
 
-for input_file in "$TESTCASE_DIR"/*.txt; do
-    testname=$(basename "$input_file" .txt)
+for input_file in "$TESTCASE_DIR"/*.c; do
+    testname=$(basename "$input_file" .c)
 
     if [ -n "$FILTER" ] && [ "$testname" != "$FILTER" ]; then
         continue
     fi
 
-    student_out=$("$BUILD_DIR/codegen" < "$input_file" 2>/dev/null) || {
-        echo -e "${RED}  CRASH ${testname} — codegen exited with error${NC}"
+    rm -f codegen.S a.out golden.S
+
+    "$BUILD_DIR/codegen" < "$input_file" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  CRASH $testname (codegen failed)${NC}"
         ERRORS=$((ERRORS + 1))
         continue
-    }
+    fi
 
-    golden_out=$(cat "$TESTCASE_DIR/answers/${testname}_answer.txt")
+    riscv32-unknown-elf-gcc main.c codegen.S -o a.out >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  CRASH $testname (gcc failed)${NC}"
+        ERRORS=$((ERRORS + 1))
+        continue
+    fi
 
-    diff_result=$(diff <(printf '%s' "$student_out") <(printf '%s' "$golden_out") || true)
+    student_out=$($SPIKE a.out 2>/dev/null)
+
+    riscv32-unknown-elf-gcc -S -c "$input_file" -o golden.S >/dev/null 2>&1
+    golden_out=$($SPIKE golden.S 2>/dev/null)
+
+    diff_result=$(diff <(printf "%s" "$student_out") <(printf "%s" "$golden_out") || true)
 
     if [ -z "$diff_result" ]; then
-        echo -e "${GREEN}  PASS  ${testname}${NC}"
+        echo -e "${GREEN}  PASS $testname${NC}"
         PASS=$((PASS + 1))
     else
-        echo -e "${RED}  FAIL  ${testname}${NC}"
-        echo -e "${YELLOW}  --- your output vs golden output (first 20 diff lines) ---${NC}"
+        echo -e "${RED}  FAIL $testname${NC}"
         echo "$diff_result" | head -20
-        echo ""
         FAIL=$((FAIL + 1))
     fi
 done
@@ -145,23 +160,17 @@ done
 # ── Step 4: Summary ───────────────────────────────────────────
 echo ""
 echo -e "${CYAN}[4/4] Summary${NC}"
-echo -e "  ${GREEN}Passed: $PASS${NC}"
-echo -e "  ${RED}Failed: $FAIL${NC}"
-if [ $ERRORS -gt 0 ]; then
-    echo -e "  ${RED}Crashed: $ERRORS${NC}"
-fi
-
-TOTAL=$((PASS + FAIL + ERRORS))
-echo -e "  Total:  $TOTAL"
+echo -e "  Passed: $PASS"
+echo -e "  Failed: $FAIL"
+echo -e "  Crashed: $ERRORS"
 echo ""
 
-if [ $TOTAL -eq 0 ]; then
-    echo -e "${YELLOW}${BOLD}  No testcases found in $TESTCASE_DIR${NC}"
-    echo -e "  Make sure testcases/*.txt files exist."
-elif [ $FAIL -eq 0 ] && [ $ERRORS -eq 0 ]; then
-    echo -e "${GREEN}${BOLD}  All testcases passed! ✓${NC}"
+TOTAL=$((PASS + FAIL + ERRORS))
+
+if [ $FAIL -eq 0 ] && [ $ERRORS -eq 0 ]; then
+    echo -e "${GREEN}${BOLD}All tests passed ✓${NC}"
 else
-    echo -e "${RED}${BOLD}  Some testcases failed. Keep debugging!${NC}"
+    echo -e "${RED}${BOLD}Some tests failed${NC}"
 fi
 
 echo ""

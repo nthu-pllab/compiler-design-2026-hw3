@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "y.tab.h"
+FILE *f;
 
 %}
 
@@ -26,11 +27,31 @@ float {
   yylval.strVal = strdup(yytext);
   return FLOAT_TYPE;
 }
+void {
+  yylval.strVal = strdup(yytext);
+  return VOID_TYPE;
+}
 {id} {
   yylval.strVal = (char*)strdup(yytext);
   return IDENT;
 }
 ";" {
+  yylval.chVal = yytext[0];
+  return yytext[0];
+}
+"(" {
+  yylval.chVal = yytext[0];
+  return yytext[0];
+}
+")" {
+  yylval.chVal = yytext[0];
+  return yytext[0];
+}
+"{" {
+  yylval.chVal = yytext[0];
+  return yytext[0];
+}
+"}" {
   yylval.chVal = yytext[0];
   return yytext[0];
 }
